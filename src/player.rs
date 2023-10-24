@@ -25,10 +25,12 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Player>()
             .add_systems(
-                (spawn_player, spawn_gameplay_ui).in_schedule(OnEnter(GameState::Gameplay)),
+                OnEnter(GameState::Gameplay),
+                (spawn_player, spawn_gameplay_ui),
             )
             .add_systems(
-                (give_money_on_kill, update_player_ui).in_set(OnUpdate(GameState::Gameplay)),
+                Update,
+                (give_money_on_kill, update_player_ui).run_if(in_state(GameState::Gameplay)),
             );
     }
 }
@@ -58,7 +60,8 @@ fn spawn_gameplay_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexStart,
                 flex_direction: FlexDirection::Column,
@@ -71,7 +74,8 @@ fn spawn_gameplay_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             commands
                 .spawn(NodeBundle {
                     style: Style {
-                        size: Size::new(Val::Percent(100.0), Val::Percent(10.0)),
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(10.0),
                         justify_content: JustifyContent::SpaceBetween,
                         align_items: AlignItems::FlexStart,
                         align_self: AlignSelf::FlexStart,

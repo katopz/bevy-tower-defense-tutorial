@@ -21,6 +21,7 @@ pub struct TargetPath {
 }
 
 //Can have any data attached (i.e what kind of target or it's value)
+#[derive(Clone, Event)]
 pub struct TargetDeathEvent;
 
 pub struct TargetPlugin;
@@ -39,8 +40,9 @@ impl Plugin for TargetPlugin {
                 ],
             })
             .add_systems(
+                Update,
                 (move_targets, hurt_player.after(move_targets), target_death)
-                    .in_set(OnUpdate(GameState::Gameplay)),
+                    .run_if(in_state(GameState::Gameplay)),
             );
     }
 }
@@ -63,7 +65,7 @@ fn hurt_player(
     targets: Query<(Entity, &Target)>,
     path: Res<TargetPath>,
     mut player: Query<&mut Player>,
-    audio: Res<Audio>,
+    // audio: Res<Audio>,
     asset_server: Res<AssetServer>,
 ) {
     for (entity, target) in &targets {
@@ -71,7 +73,7 @@ fn hurt_player(
             commands.entity(entity).despawn_recursive();
 
             //Enemies reaching the end of their path could write an event to cause the player to take damage or play audio
-            audio.play(asset_server.load("damage.wav"));
+            // audio.play(asset_server.load("damage.wav"));
 
             let mut player = player.single_mut();
             if player.health > 0 {

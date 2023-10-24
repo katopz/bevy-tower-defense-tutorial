@@ -1,4 +1,5 @@
 use bevy::{ecs::query::QuerySingleError, prelude::*};
+use bevy_inspector_egui::egui::style::Selection;
 
 use crate::*;
 
@@ -10,7 +11,7 @@ pub struct Tower {
     pub range: f32,
 }
 
-#[derive(Inspectable, Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 pub enum TowerType {
     Tomato,
     Potato,
@@ -36,13 +37,14 @@ impl Plugin for TowerPlugin {
             // .register_inspectable::<TowerType>()
             .register_type::<TowerButtonState>()
             .add_systems(
+                Update,
                 (
                     tower_shooting,
                     tower_button_clicked,
                     create_ui_on_selection,
                     grey_tower_buttons.after(create_ui_on_selection),
                 )
-                    .in_set(OnUpdate(GameState::Gameplay)),
+                    .run_if(in_state(GameState::Gameplay)),
             );
     }
 }
@@ -72,6 +74,7 @@ fn tower_shooting(
     bullet_assets: Res<GameAssets>,
     time: Res<Time>,
 ) {
+    println!("tower_shooting");
     for (tower_ent, mut tower, tower_type, transform) in &mut towers {
         tower.shooting_timer.tick(time.delta());
         if tower.shooting_timer.just_finished() {
@@ -192,24 +195,25 @@ fn spawn_tower(
 fn tower_button_clicked(
     interaction: Query<(&Interaction, &TowerType, &TowerButtonState), Changed<Interaction>>,
     mut commands: Commands,
-    selection: Query<(Entity, &Selection, &Transform)>,
+    selection: Query<(Entity, &Transform)>,
     mut player: Query<&mut Player>,
     assets: Res<GameAssets>,
 ) {
     let mut player = player.single_mut();
     for (interaction, tower_type, button_state) in &interaction {
-        if matches!(interaction, Interaction::Clicked) {
-            for (entity, selection, transform) in &selection {
-                if selection.selected() {
-                    //can afford (same as checking if affordable is set)
-                    if player.money >= button_state.cost {
-                        player.money -= button_state.cost;
-                        //Remove the base model/hitbox
-                        commands.entity(entity).despawn_recursive();
+        if matches!(interaction, Interaction::Pressed) {
+            for (entity, transform) in &selection {
+                println!("{}:#?", entity.type_name());
+                // if selection.selected() {
+                //     // can afford (same as checking if affordable is set)
+                //     if player.money >= button_state.cost {
+                //         player.money -= button_state.cost;
+                //         //Remove the base model/hitbox
+                //         commands.entity(entity).despawn_recursive();
 
-                        spawn_tower(&mut commands, &assets, transform.translation, *tower_type);
-                    }
-                }
+                //         spawn_tower(&mut commands, &assets, transform.translation, *tower_type);
+                //     }
+                // }
             }
         }
     }
@@ -230,7 +234,8 @@ fn create_ui(commands: &mut Commands, asset_server: &AssetServer) {
     commands
         .spawn(NodeBundle {
             style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 ..default()
             },
@@ -242,7 +247,8 @@ fn create_ui(commands: &mut Commands, asset_server: &AssetServer) {
                 commands
                     .spawn(ButtonBundle {
                         style: Style {
-                            size: Size::new(Val::Percent(15.0 * 9.0 / 16.0), Val::Percent(15.0)),
+                            width: Val::Percent(15.0 * 9.0 / 16.0),
+                            height: Val::Percent(15.0),
                             align_self: AlignSelf::FlexEnd,
                             margin: UiRect::all(Val::Percent(2.0)),
                             ..default()
@@ -264,21 +270,21 @@ fn create_ui_on_selection(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     //Perf could probably be smarter with change detection
-    selections: Query<&Selection>,
+    // selections: Query<&Selection>,
     root: Query<Entity, With<TowerUIRoot>>,
 ) {
-    let at_least_one_selected = selections.iter().any(|selection| selection.selected());
+    // let at_least_one_selected = selections.iter().any(|selection| selection.selected());
     match root.get_single() {
         Ok(root) => {
-            if !at_least_one_selected {
-                commands.entity(root).despawn_recursive();
-            }
+            // if !at_least_one_selected {
+            commands.entity(root).despawn_recursive();
+            // }
         }
         //No root exist
         Err(QuerySingleError::NoEntities(..)) => {
-            if at_least_one_selected {
-                create_ui(&mut commands, &asset_server);
-            }
+            // if at_least_one_selected {
+            create_ui(&mut commands, &asset_server);
+            // }
         }
         _ => unreachable!("Too many ui tower roots!"),
     }

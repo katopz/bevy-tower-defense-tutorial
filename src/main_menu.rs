@@ -23,10 +23,8 @@ impl Plugin for MainMenuPlugin {
                     .with_system(quit_button_clicked),
             );
          */
-        app.add_system(spawn_main_menu.in_schedule(OnEnter(GameState::MainMenu)))
-            .add_systems(
-                (start_button_clicked, quit_button_clicked).in_set(OnUpdate(GameState::MainMenu)),
-            );
+        app.add_systems(OnEnter(GameState::MainMenu), spawn_main_menu)
+            .add_systems(Update, (start_button_clicked, quit_button_clicked));
     }
 }
 
@@ -38,7 +36,7 @@ fn start_button_clicked(
     mut mouse_input: ResMut<Input<MouseButton>>,
 ) {
     for interaction in &interactions {
-        if matches!(interaction, Interaction::Clicked) {
+        if matches!(interaction, Interaction::Pressed) {
             let root_entity = menu_root.single();
             commands.entity(root_entity).despawn_recursive();
 
@@ -53,7 +51,7 @@ fn quit_button_clicked(
     mut exit: EventWriter<AppExit>,
 ) {
     for interaction in &interactions {
-        if matches!(interaction, Interaction::Clicked) {
+        if matches!(interaction, Interaction::Pressed) {
             exit.send(AppExit);
         }
     }
@@ -69,7 +67,8 @@ fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 flex_direction: FlexDirection::Column,
                 ..default()
@@ -108,7 +107,8 @@ fn spawn_button(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Percent(65.0), Val::Percent(15.0)),
+                width: Val::Percent(65.0),
+                height: Val::Percent(15.0),
                 align_self: AlignSelf::Center,
                 justify_content: JustifyContent::Center,
                 margin: UiRect::all(Val::Percent(2.0)),

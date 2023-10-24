@@ -20,8 +20,9 @@ impl Plugin for BulletPlugin {
         app.register_type::<Bullet>()
             .register_type::<Lifetime>()
             .add_systems(
+                Update,
                 (bullet_collision, move_bullets, bullet_despawn)
-                    .in_set(OnUpdate(GameState::Gameplay)),
+                    .run_if(in_state(GameState::Gameplay)),
             );
     }
 }

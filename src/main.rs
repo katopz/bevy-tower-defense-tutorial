@@ -1,5 +1,5 @@
 use bevy::{pbr::NotShadowCaster, prelude::*, utils::FloatOrd, window::WindowResolution};
-use bevy_inspector_egui::Inspectable;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::*;
 
 pub const HEIGHT: f32 = 720.0;
@@ -50,23 +50,24 @@ fn main() {
             ..default()
         }))
         // Inspector Setup
-        // TODO: Update to a new version of bevy_inspector_egui
-        // .add_plugin(WorldInspectorPlugin::new())
+        .add_plugins(WorldInspectorPlugin::new())
         // Mod Picking
         .add_plugins(DefaultPickingPlugins)
         // Our State
         .add_state::<GameState>()
         // Our Systems
-        .add_plugin(TowerPlugin)
-        .add_plugin(TargetPlugin)
-        .add_plugin(BulletPlugin)
-        .add_plugin(MainMenuPlugin)
-        .add_plugin(PlayerPlugin)
+        .add_plugins((
+            TowerPlugin,
+            TargetPlugin,
+            BulletPlugin,
+            MainMenuPlugin,
+            PlayerPlugin,
+        ))
         //TODO despawn scene on returning to main menu (on_exit)
-        .add_system(spawn_basic_scene.in_schedule(OnEnter(GameState::Gameplay)))
-        .add_startup_system(spawn_camera)
-        .add_startup_system(asset_loading.in_base_set(StartupSet::PreStartup))
-        .add_system(camera_controls)
+        .add_systems(OnEnter(GameState::Gameplay), spawn_basic_scene)
+        .add_systems(Startup, spawn_camera)
+        .add_systems(PreStartup, asset_loading)
+        .add_systems(Update, camera_controls)
         .run();
 }
 
@@ -121,16 +122,6 @@ fn camera_controls(
     }
 }
 
-/* Selection testing system
-fn what_is_selected(selection: Query<(&Name, &Selection)>) {
-    for (name, selection) in &selection {
-        if selection.selected() {
-            info!("{}", name);
-        }
-    }
-}
-*/
-
 fn spawn_basic_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -158,12 +149,12 @@ fn spawn_basic_scene(
                 )))
                 .insert(Name::new("Tower_Base"))
                 .insert(meshes.add(shape::Capsule::default().into()))
-                .insert(Highlighting {
-                    initial: default_collider_color.clone(),
-                    hovered: Some(selected_collider_color.clone()),
-                    pressed: Some(selected_collider_color.clone()),
-                    selected: Some(selected_collider_color.clone()),
-                })
+                // .insert(Highlighting {
+                //     initial: default_collider_color.clone(),
+                //     hovered: Some(selected_collider_color.clone()),
+                //     pressed: Some(selected_collider_color.clone()),
+                //     selected: Some(selected_collider_color.clone()),
+                // })
                 .insert(default_collider_color.clone())
                 .insert(NotShadowCaster)
                 .insert(PickableBundle::default())
@@ -211,5 +202,5 @@ fn spawn_camera(mut commands: Commands) {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
-        .insert(PickingCameraBundle::default());
+        .insert(PickableBundle::default());
 }
